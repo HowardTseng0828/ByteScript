@@ -1,0 +1,19 @@
+{
+  "name": "bytescript-v1",
+  "version": "1.0.0",
+  "description": "The Discord Bot for Music Playback and Enhanced Features! Developed by Howard Tseng.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@discordjs/voice": "^0.16.1",
+    "discord.js": "^14.12.1",
+    "dotenv": "^16.4.5",
+    "libsodium-wrappers": "^0.7.13",
+    "play-dl": "^1.9.7"
+  }
+}
