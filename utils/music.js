@@ -1,27 +1,28 @@
+const play = require('play-dl');
 const { createAudioPlayer, createAudioResource, NoSubscriberBehavior, AudioPlayerStatus } = require('@discordjs/voice');
 const { EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder } = require('discord.js');
-const play = require('play-dl');
 
 let activityTimer;
 
 class Music {
 
     constructor() {
-        this.queue = {};
         this.isPlaying = {};
+        this.queue = {};
         this.connection = {};
         this.dispatcher = {};
+        this.isPaused = false;
         this.targetMessage = {};
         this.selectMenuMessage = {};
     }
 
     isYTPlayList(query) {
-        const ytRegex = /[?&]list=/;
+        const ytRegex = /^.*(youtu.be\/|list=)([^#\&\?]*).*/;
         return ytRegex.test(query);
     }
 
     isYT(query) {
-        const ytRegex = /^((?:https?:)?\/\/)?((?:www|m)\.)?((?:youtube\.com|youtu.be|music.youtube\.com))(\/(?:[\w\-]+\?v=|embed\/|v\/)?)([\w\-]+)(\S+)?$/;
+        const ytRegex = /^((?:https?:)?\/\/)?((?:www|m)\.)?((?:youtube\.com|youtu.be))(\/(?:[\w\-]+\?v=|embed\/|v\/)?)([\w\-]+)(\S+)?$/;
         return ytRegex.test(query);
     }
 
@@ -37,11 +38,6 @@ class Music {
 
     isSpotAlbum(query) {
         const spotRegex = /^https?:\/\/(?:open\.spotify\.com|spotify)\/(album)\/[a-zA-Z0-9]+/;
-        return spotRegex.test(query);
-    }
-
-    isSpotArtist(query) {
-        const spotRegex = /^https?:\/\/(?:open\.spotify\.com|spotify)\/(artist)\/[a-zA-Z0-9]+/;
         return spotRegex.test(query);
     }
 

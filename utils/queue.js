@@ -31,9 +31,9 @@ const queue = {
 					iconURL: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSwbo0K7qI9b935NfImOxBEfDZPwBADK3eN8Q&usqp=CAU',
 					text: 'Byte Script'
 				});
-			await interaction.reply({ embeds: [embed] });
+			const reply = await interaction.reply({ embeds: [embed] });
 			setTimeout(() => {
-				interaction.deleteReply();
+				reply.delete();
 			}, 10000);
 		} else {
 			const embed = new EmbedBuilder()
@@ -49,9 +49,9 @@ const queue = {
 					iconURL: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSwbo0K7qI9b935NfImOxBEfDZPwBADK3eN8Q&usqp=CAU',
 					text: 'Byte Script'
 				});
-			interaction.reply({ embeds: [embed], ephemeral: true });
+			const reply = await interaction.reply({ embeds: [embed], ephemeral: true });
 			setTimeout(() => {
-				interaction.deleteReply();
+				reply.delete();
 			}, 3000);
 		}
 	},
@@ -88,9 +88,9 @@ const queue = {
 					iconURL: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSwbo0K7qI9b935NfImOxBEfDZPwBADK3eN8Q&usqp=CAU',
 					text: 'Byte Script'
 				});
-			interaction.reply({ embeds: [embed], ephemeral: true });
+			const reply = await interaction.reply({ embeds: [embed], ephemeral: true });
 			setTimeout(() => {
-				interaction.deleteReply();
+				reply.delete();
 			}, 3000);
 		}
 	}

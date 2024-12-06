@@ -1,7 +1,9 @@
+spotify.data
 node_modules
-ByteScript.jpg
+cookies.json
+.env
+ByteScript.jpg 
 Spotify.jpg
 YouTube.jpg
-spotify.data
-.env
+package.json
 package-lock.json

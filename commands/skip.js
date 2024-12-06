@@ -8,14 +8,13 @@ const skip = {
 	async execute(interaction) {
 		const guildId = interaction.guildId;
 		if (music.dispatcher[guildId]) {
-			if (music.isPlaying[guildId]) {
-				music.dispatcher[guildId].unpause();
+			if (!music.isPaused) {
 				music.dispatcher[guildId].stop();
 				if (music.queue[guildId] && music.queue[guildId].length > 0) {
 					const embed = new EmbedBuilder()
 						.setColor('#0099ff')
 						.setTitle("成功 🎉")
-						.setDescription('已跳過歌曲...')
+						.setDescription('已跳過歌曲')
 						.setAuthor({
 							url: `https://discord.com/users/${interaction.user.id}`,
 							iconURL: interaction.user.displayAvatarURL(),
@@ -42,6 +41,41 @@ const skip = {
 						});
 					interaction.reply({ embeds: [embed] });
 				}
+			} else {
+				music.dispatcher[guildId].stop();
+				music.dispatcher[guildId].unpause();
+				music.isPaused = false;
+				if (music.queue[guildId] && music.queue[guildId].length > 0) {
+					const embed = new EmbedBuilder()
+						.setColor('#0099ff')
+						.setTitle("成功 🎉")
+						.setDescription('已跳過歌曲')
+						.setAuthor({
+							url: `https://discord.com/users/${interaction.user.id}`,
+							iconURL: interaction.user.displayAvatarURL(),
+							name: interaction.user.tag
+						})
+						.setFooter({
+							iconURL: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSwbo0K7qI9b935NfImOxBEfDZPwBADK3eN8Q&usqp=CAU',
+							text: 'Byte Script'
+						});
+					interaction.reply({ embeds: [embed] });
+				} else {
+					const embed = new EmbedBuilder()
+						.setColor('#0099ff')
+						.setTitle("成功 🎉")
+						.setDescription('已跳過歌曲，且沒有下一首歌囉')
+						.setAuthor({
+							url: `https://discord.com/users/${interaction.user.id}`,
+							iconURL: interaction.user.displayAvatarURL(),
+							name: interaction.user.tag
+						})
+						.setFooter({
+							iconURL: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSwbo0K7qI9b935NfImOxBEfDZPwBADK3eN8Q&usqp=CAU',
+							text: 'Byte Script'
+						});
+					interaction.reply({ embeds: [embed] });
+				}
 			}
 		} else {
 			const embed = new EmbedBuilder()
@@ -57,9 +91,9 @@ const skip = {
 					iconURL: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSwbo0K7qI9b935NfImOxBEfDZPwBADK3eN8Q&usqp=CAU',
 					text: 'Byte Script'
 				});
-			interaction.reply({ embeds: [embed], ephemeral: true });
+			const reply = await interaction.reply({ embeds: [embed], ephemeral: true });
 			setTimeout(() => {
-				interaction.deleteReply();
+				reply.delete();
 			}, 3000);
 		}
 	}

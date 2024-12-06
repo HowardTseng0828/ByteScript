@@ -1,7 +1,7 @@
-const { EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder, SlashCommandBuilder } = require('discord.js');
-const { joinVoiceChannel } = require('@discordjs/voice');
-const music = require('../utils/music');
 const play = require('play-dl');
+const { joinVoiceChannel } = require('@discordjs/voice');
+const { EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder, SlashCommandBuilder } = require('discord.js');
+const music = require('../utils/music');
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -14,7 +14,7 @@ module.exports = {
 			const embed = new EmbedBuilder()
 				.setColor('#ff0000')
 				.setTitle("失敗 ❌")
-				.setDescription('使用者請先進入頻道')
+				.setDescription('請先進入頻道')
 				.setAuthor({
 					url: `https://discord.com/users/${interaction.user.id}`,
 					iconURL: interaction.user.displayAvatarURL(),
@@ -24,16 +24,16 @@ module.exports = {
 					iconURL: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSwbo0K7qI9b935NfImOxBEfDZPwBADK3eN8Q&usqp=CAU',
 					text: 'Byte Script'
 				});
-			interaction.reply({ embeds: [embed], ephemeral: true });
+			const reply = await interaction.reply({ embeds: [embed], ephemeral: true });
 			setTimeout(() => {
-				interaction.deleteReply();
+				reply.delete();
 			}, 3000);
 			return;
 		} else {
 			const embed = new EmbedBuilder()
 				.setColor('#0099ff')
 				.setTitle('成功 🎉')
-				.setDescription(`正在搜尋歌曲...`)
+				.setDescription(`正在搜尋歌曲`)
 				.setAuthor({
 					url: `https://discord.com/users/${interaction.user.id}`,
 					iconURL: interaction.user.displayAvatarURL(),
@@ -43,7 +43,10 @@ module.exports = {
 					iconURL: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSwbo0K7qI9b935NfImOxBEfDZPwBADK3eN8Q&usqp=CAU',
 					text: 'Byte Script'
 				});
-			interaction.reply({ embeds: [embed] });
+			const reply = await interaction.reply({ embeds: [embed], ephemeral: true });
+			setTimeout(() => {
+				reply.delete();
+			}, 3000);
 			let query = interaction.options.getString('query').trim();
 			music.connection[guildId] = joinVoiceChannel({
 				channelId: interaction.member.voice.channel.id,
@@ -59,7 +62,6 @@ module.exports = {
 				const isSpot = music.isSpot(query);
 				const isSpotPlayList = music.isSpotPlayList(query);
 				const isSpotAlbum = music.isSpotAlbum(query);
-				const isSpotArtist = music.isSpotArtist(query);
 				// Spotify驗證
 				if (isSpot) {
 					if (play.is_expired()) {
@@ -112,7 +114,9 @@ module.exports = {
 					if (play.is_expired()) {
 						await play.refreshToken();
 					}
+
 					const playlist = await play.spotify(query);
+
 					const fetchedTracks = playlist.fetched_tracks.get('1');
 					await Promise.all(fetchedTracks.map(async (track) => {
 						const searchResults = await play.search(`${track.artists[0].name} ${track.name}`, { limit: 1 });
@@ -135,6 +139,7 @@ module.exports = {
 							});
 						}
 					}));
+
 					const videoTitles = fetchedTracks.map((track, i) => `${i + 1}.   ${track.artists[0].name} - ${track.name}`).slice(0, 10).join('\n');
 					if (music.isPlaying[guildId]) {
 						if (fetchedTracks.length - 10 < 0) {
@@ -227,6 +232,7 @@ module.exports = {
 					if (play.is_expired()) {
 						await play.refreshToken();
 					}
+
 					const playlist = await play.spotify(query);
 					const fetchedTracks = playlist.fetched_tracks.get('1');
 					await Promise.all(fetchedTracks.map(async (track) => {
@@ -250,6 +256,7 @@ module.exports = {
 							});
 						}
 					}));
+
 					const videoTitles = fetchedTracks.map((track, i) => `${i + 1}.   ${track.artists[0].name} - ${track.name}`).slice(0, 10).join('\n');
 					if (music.isPlaying[guildId]) {
 						if (fetchedTracks.length - 10 < 0) {
@@ -338,25 +345,8 @@ module.exports = {
 							music.playMusic(interaction, music.queue[guildId][0]);
 						}
 					}
-				} else if (isSpotArtist) {
-					const embed = new EmbedBuilder()
-						.setColor('#ff0000')
-						.setTitle('失敗 ❌')
-						.setDescription('目前不支援 Spotify 藝人之連結')
-						.setAuthor({
-							url: `https://discord.com/users/${interaction.user.id}`,
-							iconURL: interaction.user.displayAvatarURL(),
-							name: interaction.user.tag
-						})
-						.setFooter({
-							iconURL: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSwbo0K7qI9b935NfImOxBEfDZPwBADK3eN8Q&usqp=CAU',
-							text: 'Byte Script'
-						});
-					const reply = await interaction.channel.send({ embeds: [embed], ephemeral: true });
-					setTimeout(() => {
-						reply.delete();
-					}, 3000);
 				} else if (isYT) {
+					const res = await play.video_basic_info(query);
 					if (isYTPlayList) {
 						const res = await play.playlist_info(query);
 						res.videos.forEach(v => {
@@ -455,7 +445,6 @@ module.exports = {
 							}
 						}
 					} else {
-						const res = await play.video_basic_info(query);
 						music.queue[guildId].push({
 							id: res.video_details.id,
 							name: res.video_details.title,
@@ -492,7 +481,7 @@ module.exports = {
 					const embed = new EmbedBuilder()
 						.setColor('#ff0000')
 						.setTitle("搜尋篩選器")
-						.setDescription(`以下是搜尋到關於 「 ${query} 」 的10筆資料`)
+						.setDescription(`以下是搜尋到關於 「 ${query} 」的10筆資料`)
 						.setAuthor({
 							url: `https://discord.com/users/${interaction.user.id}`,
 							iconURL: interaction.user.displayAvatarURL(),
@@ -518,7 +507,7 @@ module.exports = {
 				const embed = new EmbedBuilder()
 					.setColor('#ff0000')
 					.setTitle("失敗 ❌")
-					.setDescription('撥放歌曲時，發生錯誤')
+					.setDescription('發生錯誤')
 					.setAuthor({
 						url: `https://discord.com/users/${interaction.user.id}`,
 						iconURL: interaction.user.displayAvatarURL(),

@@ -30,6 +30,7 @@ const leave = {
 				music.selectMenuMessage = {};
 			}
 			music.connection[guildId].disconnect();
+			music.isPaused = false;
 			music.connection = {};
 			const embed = new EmbedBuilder()
 				.setColor('#0099ff')
@@ -49,7 +50,7 @@ const leave = {
 			const embed = new EmbedBuilder()
 				.setColor('#ff0000')
 				.setTitle("失敗 ❌")
-				.setDescription('機器人未加入任何頻道')
+				.setDescription('機器人未加入任何頻道誤')
 				.setAuthor({
 					url: `https://discord.com/users/${interaction.user.id}`,
 					iconURL: interaction.user.displayAvatarURL(),
@@ -59,9 +60,9 @@ const leave = {
 					iconURL: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSwbo0K7qI9b935NfImOxBEfDZPwBADK3eN8Q&usqp=CAU',
 					text: 'Byte Script'
 				});
-			interaction.reply({ embeds: [embed], ephemeral: true });
+			const reply = await interaction.reply({ embeds: [embed], ephemeral: true });
 			setTimeout(() => {
-				interaction.deleteReply();
+				reply.delete();
 			}, 3000);
 		}
 	}

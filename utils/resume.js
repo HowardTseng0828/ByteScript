@@ -8,9 +8,9 @@ const resume = {
         const guildId = interaction.guildId;
         const targetMessage = await interaction.channel.messages.fetch(music.targetMessage);
         if (music.dispatcher[guildId]) {
-            if (music.isPlaying[guildId]) {
-                music.dispatcher[guildId].unpause();
+            if (music.isPaused) {
                 if (targetMessage.embeds) {
+                    music.dispatcher[guildId].unpause();
                     const editMenu = new ActionRowBuilder().addComponents(
                         new ButtonBuilder()
                             .setCustomId('pause')
@@ -49,6 +49,7 @@ const resume = {
                         interaction.deferUpdate();
                     });
                 }
+                music.isPaused = false;
             }
         } else {
             const embed = new EmbedBuilder()
@@ -64,9 +65,9 @@ const resume = {
                     iconURL: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSwbo0K7qI9b935NfImOxBEfDZPwBADK3eN8Q&usqp=CAU',
                     text: 'Byte Script'
                 });
-            interaction.reply({ embeds: [embed], ephemeral: true });
+            const reply = await interaction.reply({ embeds: [embed], ephemeral: true });
             setTimeout(() => {
-                interaction.deleteReply();
+                reply.delete();
             }, 3000);
         }
     }

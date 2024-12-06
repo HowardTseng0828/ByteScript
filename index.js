@@ -1,17 +1,36 @@
-// npm i discord.js @discordjs/voice libsodium-wrappers play-dl dotenv
+// npm i discord.js @discordjs/opus @discordjs/voice ffmpeg-static libsodium-wrappers play-dl firebase dotenv @napi-rs/canvas
 
 require('dotenv').config()
 
-const { Client, Collection, GatewayIntentBits, PermissionsBitField, Events, EmbedBuilder, ActivityType } = require("discord.js");
-const play = require('play-dl');
-const fs = require("node:fs");
+const { Client, Collection, Events, GatewayIntentBits, ActivityType, EmbedBuilder, ModalBuilder, ActionRowBuilder, TextInputBuilder, TextInputStyle, PermissionsBitField } = require("discord.js");
 const path = require("node:path");
-const skip = require("./commands/skip");
+const fs = require("node:fs");
 const leave = require("./utils/leave");
 const pause = require("./utils/pause");
 const queue = require("./utils/queue");
 const resume = require("./utils/resume");
+const skip = require("./commands/skip");
+const play = require('play-dl');
+const firebase = require('firebase/app');
+
+const { getDatabase, ref, set } = require('firebase/database');
+
+firebase.initializeApp({
+	apiKey: process.env.apiKey,
+	authDomain: process.env.authDomain,
+	projectId: process.env.projectId,
+	storageBucket: process.env.storageBucket,
+	messagingSenderId: process.env.messagingSenderId,
+	appId: process.env.appId,
+	measurementId: process.env.measurementId
+});
+
+var http = require("http");
 const music = require("./utils/music");
+http.createServer(function (req, res) {
+	res.write("I'm alive");
+	res.end();
+}).listen(8081)
 
 const client = new Client({
 	intents: [
@@ -61,7 +80,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
 		const embed = new EmbedBuilder()
 			.setColor('#ff0000')
 			.setTitle('失敗 ❌')
-			.setDescription('請檢查 ByteScript 在此語音/文字頻道的權限')
+			.setDescription('請檢查 ByteScript 的權限')
 			.setAuthor({
 				url: `https://discord.com/users/${interaction.user.id}`,
 				iconURL: interaction.user.displayAvatarURL(),
@@ -98,15 +117,133 @@ client.on(Events.InteractionCreate, async (interaction) => {
 						iconURL: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSwbo0K7qI9b935NfImOxBEfDZPwBADK3eN8Q&usqp=CAU',
 						text: 'Byte Script'
 					});
-				interaction.followUp({ embeds: [embed], ephemeral: true });
+				const reply = await interaction.followUp({ embeds: [embed], ephemeral: true });
 				setTimeout(() => {
-					interaction.deleteReply();
+					reply.delete();
 				}, 3000);
 			} else {
 				const embed = new EmbedBuilder()
 					.setColor('#ff0000')
 					.setTitle('失敗 ❌')
 					.setDescription('執行指令時發生錯誤！')
+					.setAuthor({
+						url: `https://discord.com/users/${interaction.user.id}`,
+						iconURL: interaction.user.displayAvatarURL(),
+						name: interaction.user.tag
+					})
+					.setFooter({
+						iconURL: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSwbo0K7qI9b935NfImOxBEfDZPwBADK3eN8Q&usqp=CAU',
+						text: 'Byte Script'
+					});
+				const reply = await interaction.reply({ embeds: [embed], ephemeral: true });
+				setTimeout(() => {
+					reply.delete();
+				}, 3000);
+			}
+		}
+	}
+
+	if (interaction.isMessageComponent()) {
+		if (interaction.member.voice.channel) {
+			if (interaction.customId === 'pause') {
+				await pause.execute(interaction);
+			} else if (interaction.customId === 'resume') {
+				await resume.execute(interaction);
+			}
+			else if (interaction.customId === 'skip') {
+				await skip.execute(interaction);
+			}
+			else if (interaction.customId === 'queue') {
+				await queue.execute(interaction);
+			}
+			else if (interaction.customId === 'leave') {
+				await leave.execute(interaction);
+			}
+			else if (interaction.customId === 'delete') {
+				await queue.delete(interaction);
+			} else if (interaction.customId === 'create-role') {
+				const modal = new ModalBuilder()
+					.setCustomId('create-role-name-modal')
+					.setTitle('角色資訊')
+					.addComponents(
+						new ActionRowBuilder().addComponents(
+							new TextInputBuilder()
+								.setCustomId('role-name')
+								.setLabel('角色名稱')
+								.setMinLength(1)
+								.setMaxLength(12)
+								.setStyle(TextInputStyle.Short)
+								.setPlaceholder(interaction.user.tag)
+								.setRequired(true)
+						),
+						new ActionRowBuilder().addComponents(
+							new TextInputBuilder()
+								.setCustomId('role-image')
+								.setLabel('角色圖片')
+								.setMinLength(1)
+								.setMaxLength(100)
+								.setStyle(TextInputStyle.Paragraph)
+								.setPlaceholder('請輸入圖片URL網址')
+								.setRequired(true)
+						)
+					);
+				await interaction.showModal(modal);
+			}
+		} else {
+			const embed = new EmbedBuilder()
+				.setColor('#ff0000')
+				.setTitle('失敗 ❌')
+				.setDescription('請先進入頻道內')
+				.setAuthor({
+					url: `https://discord.com/users/${interaction.user.id}`,
+					iconURL: interaction.user.displayAvatarURL(),
+					name: interaction.user.tag
+				})
+				.setFooter({
+					iconURL: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSwbo0K7qI9b935NfImOxBEfDZPwBADK3eN8Q&usqp=CAU',
+					text: 'Byte Script'
+				});
+			const reply = await interaction.reply({ embeds: [embed], ephemeral: true });
+			setTimeout(() => {
+				reply.delete();
+			}, 3000);
+		}
+	}
+
+	if (interaction.isModalSubmit()) {
+		if (interaction.customId === 'create-role-name-modal') {
+			const name = interaction.fields.getTextInputValue('role-name');
+			const url = interaction.fields.getTextInputValue('role-image');
+			const imgRegex = /([a-z\-_0-9\/\:\.]*\.(jpg|jpeg|png|gif))/;
+			imgRegex.test(url);
+			if (imgRegex) {
+				const db = getDatabase();
+				set(ref(db, 'users/'), {
+					id: interaction.user.id
+				});
+				set(ref(db, `users/id/${interaction.user.id}/role`), {
+					name: name,
+					url: url
+				});
+				const embed = new EmbedBuilder()
+					.setColor('#0099ff')
+					.setTitle('成功 🎉')
+					.setDescription(`已創建名為 ${name} 角色`)
+					.setAuthor({
+						url: `https://discord.com/users/${interaction.user.id}`,
+						iconURL: interaction.user.displayAvatarURL(),
+						name: interaction.user.tag
+					})
+					.setFooter({
+						iconURL: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSwbo0K7qI9b935NfImOxBEfDZPwBADK3eN8Q&usqp=CAU',
+						text: 'Byte Script'
+					});
+				interaction.reply({ embeds: [embed] });
+			} else {
+				const embed = new EmbedBuilder()
+					.setColor('#ff0000')
+					.setTitle("失敗 ❌")
+					.setDescription(`錯誤的圖片URL網址`)
 					.setAuthor({
 						url: `https://discord.com/users/${interaction.user.id}`,
 						iconURL: interaction.user.displayAvatarURL(),
@@ -124,45 +261,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
 		}
 	}
 
-	if (interaction.isMessageComponent()) {
-		if (interaction.member.voice.channel) {
-			if (interaction.customId === 'skip') {
-				await skip.execute(interaction);
-			}
-			if (interaction.customId === 'leave') {
-				await leave.execute(interaction);
-			}
-			if (interaction.customId === 'queue') {
-				await queue.execute(interaction);
-			}
-			if (interaction.customId === 'delete') {
-				await queue.delete(interaction);
-			}
-			if (interaction.customId === 'pause') {
-				await pause.execute(interaction);
-			}
-			if (interaction.customId === 'resume') {
-				await resume.execute(interaction);
-			}
-		} else {
-			const embed = new EmbedBuilder()
-				.setColor('#ff0000')
-				.setTitle('失敗 ❌')
-				.setDescription('使用者請先進入語音頻道內')
-				.setAuthor({
-					url: `https://discord.com/users/${interaction.user.id}`,
-					iconURL: interaction.user.displayAvatarURL(),
-					name: interaction.user.tag
-				})
-				.setFooter({
-					iconURL: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSwbo0K7qI9b935NfImOxBEfDZPwBADK3eN8Q&usqp=CAU',
-					text: 'Byte Script'
-				});
-			await interaction.reply({ embeds: [embed], ephemeral: true });
-			setTimeout(() => {
-				interaction.deleteReply();
-			}, 3000);
-		}
+	if (interaction.isStringSelectMenu()) {
 		if (interaction.customId === 'music') {
 			const guildId = interaction.guildId;
 			const res = await play.video_basic_info(interaction.values[0]);
@@ -202,7 +301,6 @@ client.on(Events.InteractionCreate, async (interaction) => {
 			await interaction.deferUpdate();
 		}
 	}
-
 });
 
 const registerCommands = async (client) => {
